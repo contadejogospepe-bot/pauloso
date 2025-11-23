@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Global News</title>
+    
+    <!-- Estilos (Tailwind CSS) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fontes -->
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- React e Babel (para rodar o site direto no navegador) -->
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.292.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+      body { font-family: 'Inter', sans-serif; }
+      h1, h2, h3, h4, h5, h6 { font-family: 'Merriweather', serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div id="root"></div>
+
+    <!-- CÓDIGO DO SITE -->
+    <script type="text/babel" data-type="module">
+      import React, { useState, useEffect } from "react";
+      import { createRoot } from "react-dom/client";
+      import { Newspaper, Lock, LogOut, Calendar, User, Tag, ArrowRight, AlertCircle, PlusCircle, Image as ImageIcon, Save, Info, AlertTriangle } from "lucide-react";
+
+      // --- CONFIGURAÇÕES ---
+      const ViewState = {
+        HOME: 'HOME',
+        ADMIN_LOGIN: 'ADMIN_LOGIN',
+        ADMIN_DASHBOARD: 'ADMIN_DASHBOARD',
+      };
+
+      // --- COMPONENTE: CABEÇALHO ---
+      const Header = ({ currentView, setView }) => {
+        return (
+          <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+              <div 
+                className="flex items-center cursor-pointer gap-2"
+                onClick={() => setView(ViewState.HOME)}
+              >
+                <Newspaper className="h-8 w-8 text-red-700" />
+                <span className="text-2xl font-bold tracking-tight text-gray-900">
+                  Global<span className="text-red-700">News</span>
+                </span>
+              </div>
+
+              <div>
+                {currentView === ViewState.ADMIN_DASHBOARD ? (
+                  <button
+                    onClick={() => setView(ViewState.HOME)}
+                    className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sair do Admin
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setView(ViewState.ADMIN_LOGIN)}
+                    className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                  >
+                    <Lock className="h-4 w-4" />
+                    Área Restrita
+                  </button>
+                )}
+              </div>
+            </div>
+          </header>
+        );
+      };
+
+      // --- COMPONENTE: CARTÃO DE NOTÍCIA ---
+      const NewsCard = ({ item }) => {
+        return (
+          <article className="flex flex-col overflow-hidden bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100">
+            <div className="relative w-full h-48 sm:h-64 overflow-hidden bg-gray-200">
+              <img
+                src={item.imageUrl}
+                alt={item.title}
+                className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                onError={(e) => {
+                  e.target.src = 'https://picsum.photos/800/600?grayscale';
+                }}
+              />
+              <div className="absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
+                {item.category}
+              </div>
+            </div>
+            
+            <div className="flex flex-col flex-1 p-6">
+              <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {new Date(item.date).toLocaleDateString('pt-BR')}
+                </div>
+                <div className="flex items-center gap-1">
+                  <User className="h-3 w-3" />
+                  {item.author}
+                </div>
+              </div>
+
+              <h3 className="text-xl font-bold text-gray-900 mb-3 leading-tight group-hover:text-red-700">
+                {item.title}
+              </h3>
+
+              <p className="text-gray-600 text-sm leading-relaxed mb-4 flex-1">
+                {item.description}
+              </p>
+
+              <div className="mt-auto pt-4 border-t border-gray-100">
+                <button className="text-red-700 font-semibold text-sm hover:underline">
+                  Ler mais &rarr;
+                </button>
+              </div>
+            </div>
+          </article>
+        );
+      };
+
+      // --- COMPONENTE: LOGIN DO ADMIN ---
+      const AdminLogin = ({ onLoginSuccess }) => {
+        const [password, setPassword] = useState('');
+        const [error, setError] = useState('');
+
+        const handleLogin = (e) => {
+          e.preventDefault();
+          if (password === '077') {
+            onLoginSuccess();
+          } else {
+            setError('Senha incorreta. Tente novamente.');
+            setPassword('');
+          }
+        };
+
+        return (
+          <div className="min-h-[60vh] flex items-center justify-center px-4">
+            <div className="w-full max-w-md bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+              <div className="flex flex-col items-center mb-6">
+                <div className="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                  <Lock className="h-6 w-6 text-red-700" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">Acesso Administrativo</h2>
+                <p className="text-gray-500 text-sm mt-1">Digite a senha para gerenciar notícias.</p>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                    Senha de Acesso
+                  </label>
+                  <input
+                    type="password"
+                    id="password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setError('');
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+                    placeholder="Digite 077"
+                    autoFocus
+                  />
+                </div>
+
+                {error && (
+                  <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+                    <AlertCircle className="h-4 w-4" />
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full bg-gray-900 text-white font-medium py-2.5 rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                >
+                  Entrar
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+      };
+
+      // --- COMPONENTE: PAINEL DO ADMIN ---
+      const CATEGORIES = [
+        'Geral', 'Tecnologia', 'Esportes', 'Política', 
+        'Mundo', 'Economia', 'Entretenimento', 'Saúde'
+      ];
+
+      const AdminDashboard = ({ onAddNews }) => {
+        const [formData, setFormData] = useState({
+          title: '',
+          description: '',
+          imageUrl: '',
+          date: new Date().toISOString().split('T')[0],
+          author: 'Admin',
+          category: 'Geral'
+        });
+        
+        const [showGitHubInfo, setShowGitHubInfo] = useState(true);
+
+        const handleSubmit = (e) => {
+          e.preventDefault();
+          const newItem = {
+            id: Date.now().toString(),
+            ...formData,
+            imageUrl: formData.imageUrl || `https://picsum.photos/800/600?random=${Date.now()}`
+          };
+          onAddNews(newItem);
+          setFormData({
+            title: '',
+            description: '',
+            imageUrl: '',
+            date: new Date().toISOString().split('T')[0],
+            author: 'Admin',
+            category: 'Geral'
+          });
+          alert('Notícia publicada! (Visível APENAS para você neste navegador)');
+        };
+
+        return (
+          <div className="max-w-3xl mx-auto py-8 px-4">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="bg-gray-900 p-6 flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <PlusCircle className="h-5 w-5 text-red-500" />
+                    Adicionar Nova Notícia
+                  </h2>
+                  <p className="text-gray-400 text-sm mt-1">Área restrita (Senha 077)</p>
+                </div>
+                <button 
+                  onClick={() => setShowGitHubInfo(!showGitHubInfo)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <Info className="h-5 w-5" />
+                </button>
+              </div>
+
+              {showGitHubInfo && (
+                 <div className="bg-amber-50 p-4 border-b border-amber-100 text-sm text-amber-900">
+                   <h4 className="font-bold flex items-center gap-2 mb-1 text-amber-800">
+                     <AlertTriangle className="h-4 w-4" />
+                     IMPORTANTE: Modo GitHub Pages
+                   </h4>
+                   <p className="mb-2">
+                     Este é um site estático.
+                   </p>
+                   <ul className="list-disc list-inside space-y-1 ml-1 opacity-90 text-amber-800">
+                     <li>Notícias criadas <strong>AQUI</strong> ficam apenas no <strong>SEU navegador</strong>.</li>
+                     <li>Para adicionar notícias permanentes para todos, edite o código HTML no GitHub.</li>
+                   </ul>
+                 </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Título da Manchete
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-serif text-lg"
+                    placeholder="Digite o título da notícia"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descrição
+                  </label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none resize-none"
+                    placeholder="Escreva sobre o que aconteceu..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nome ou URL da Imagem
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <ImageIcon className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.imageUrl}
+                        onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                        placeholder="Ex: ./foto.jpg ou https://..."
+                        className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Para usar uma imagem do GitHub, digite <code>./nome-da-imagem.png</code>.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Categoria
+                    </label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none bg-white"
+                    >
+                      {CATEGORIES.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Data
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Autor
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.author}
+                      onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100">
+                  <button
+                    type="submit"
+                    className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Save className="h-5 w-5" />
+                    Publicar Notícia (Local)
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      };
+
+      // --- COMPONENTE PRINCIPAL (APP) ---
+      const INITIAL_NEWS = [
+        {
+          id: 'noticia-fixa-aberto', 
+          title: 'Notícia Principal (Visível para Todos)',
+          description: 'Esta é a notícia de destaque que todos podem ver ao entrar no site. A imagem vem do arquivo aberto.png que está no repositório.',
+          imageUrl: './aberto.png',
+          date: new Date().toISOString().split('T')[0],
+          author: 'Admin Oficial',
+          category: 'Destaque'
+        },
+        {
+          id: '1',
+          title: 'Avanços na Energia Renovável',
+          description: 'Novas tecnologias de painéis solares prometem aumentar a eficiência energética em 40% até o final do ano.',
+          imageUrl: 'https://picsum.photos/id/16/800/600',
+          date: '2023-10-25',
+          author: 'Maria Silva',
+          category: 'Tecnologia'
+        },
+        {
+          id: '2',
+          title: 'Final do Campeonato Regional',
+          description: 'O time da casa leva o troféu após uma partida emocionante decidida nos pênaltis.',
+          imageUrl: 'https://picsum.photos/id/15/800/600',
+          date: '2023-10-24',
+          author: 'João Souza',
+          category: 'Esportes'
+        }
+      ];
+
+      const App = () => {
+        const [view, setView] = useState(ViewState.HOME);
+        const [news, setNews] = useState([]);
+
+        useEffect(() => {
+          const savedNews = localStorage.getItem('global_news_data');
+          if (savedNews) {
+            const parsedNews = JSON.parse(savedNews);
+            const combinedNews = [...parsedNews.filter(p => !INITIAL_NEWS.find(i => i.id === p.id))];
+            
+            // Garante que as notícias fixas (como a aberto.png) apareçam sempre
+            INITIAL_NEWS.forEach(fixedItem => {
+              if (!combinedNews.find(p => p.id === fixedItem.id)) {
+                combinedNews.unshift(fixedItem);
+              }
+            });
+            
+            setNews(combinedNews.length > 0 ? combinedNews : INITIAL_NEWS);
+          } else {
+            setNews(INITIAL_NEWS);
+          }
+        }, []);
+
+        useEffect(() => {
+          if (news.length > 0) {
+            localStorage.setItem('global_news_data', JSON.stringify(news));
+          }
+        }, [news]);
+
+        const handleAddNews = (item) => {
+          setNews([item, ...news]);
+          setView(ViewState.HOME);
+        };
+
+        return (
+          <div className="min-h-screen bg-gray-50 flex flex-col">
+            <Header currentView={view} setView={setView} />
+
+            <main className="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+              {view === ViewState.HOME && (
+                <div className="space-y-8">
+                   <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+                      <h2 className="text-3xl font-serif font-bold text-gray-900">
+                        Últimas Notícias
+                      </h2>
+                      <span className="text-sm text-gray-500">
+                        {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      </span>
+                   </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {news.map((item) => (
+                      <NewsCard key={item.id} item={item} />
+                    ))}
+                  </div>
+                  
+                  {news.length === 0 && (
+                    <div className="text-center py-20 text-gray-500">
+                      Nenhuma notícia encontrada.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {view === ViewState.ADMIN_LOGIN && (
+                <AdminLogin onLoginSuccess={() => setView(ViewState.ADMIN_DASHBOARD)} />
+              )}
+
+              {view === ViewState.ADMIN_DASHBOARD && (
+                <AdminDashboard onAddNews={handleAddNews} />
+              )}
+            </main>
+
+            <footer className="bg-gray-900 text-white py-12 mt-12">
+              <div className="max-w-6xl mx-auto px-4 text-center">
+                <p className="font-serif text-lg mb-4">Global News Portal</p>
+                <p className="text-gray-400 text-sm">
+                  © {new Date().getFullYear()} Todos os direitos reservados.
+                </p>
+                <p className="text-gray-600 text-xs mt-2">
+                  Versão GitHub Pages
+                </p>
+              </div>
+            </footer>
+          </div>
+        );
+      };
+
+      // INICIALIZAÇÃO
+      const root = createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+</body>
+</html>
